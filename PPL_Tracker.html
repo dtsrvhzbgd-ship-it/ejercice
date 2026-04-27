@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0a">
+<title>PPL Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --push: #E84040;
+  --pull: #3DBE72;
+  --legs: #4D9FFF;
+  --gold: #D4AF37;
+  --bg: #0a0a0a;
+  --bg2: #141414;
+  --bg3: #1c1c1c;
+  --bg4: #252525;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0f0f0;
+  --text2: #999;
+  --text3: #555;
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { background: var(--bg); }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: 90px;
+}
+
+/* ── NAV BAR SUPERIOR ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,10,10,0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px 0;
+}
+.topbar-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px; font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.topbar-title span { color: var(--gold); }
+.nav-tabs {
+  display: flex; gap: 0;
+  overflow-x: auto; scrollbar-width: none;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 10px 16px 12px;
+  font-size: 13px; font-weight: 500;
+  color: var(--text3);
+  cursor: pointer; border: none; background: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all .2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.tab.active { color: var(--text); border-bottom-color: var(--gold); }
+
+/* ── PÁGINAS ── */
+.page { display: none; padding: 20px; }
+.page.active { display: block; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: rgba(10,10,10,0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  z-index: 100;
+}
+.bnav-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text3); font-size: 10px;
+  font-family: 'DM Sans', sans-serif;
+  padding: 4px 0;
+  transition: color .2s;
+}
+.bnav-btn.active { color: var(--gold); }
+.bnav-icon { font-size: 20px; line-height: 1; }
+
+/* ── SELECTOR DE DIA ── */
+.day-scroll {
+  display: flex; gap: 8px;
+  overflow-x: auto; scrollbar-width: none;
+  margin: 0 -20px; padding: 0 20px;
+  margin-bottom: 20px;
+}
+.day-scroll::-webkit-scrollbar { display: none; }
+.day-pill {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-radius: 99px;
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  cursor: pointer;
+  text-align: center;
+  transition: all .2s;
+}
+.day-pill .dp-dia {
+  font-size: 11px; color: var(--text3); margin-bottom: 2px;
+  font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.day-pill .dp-ses {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px; font-weight: 700; color: var(--text2);
+  letter-spacing: 0.02em;
+}
+.day-pill.active-push { border-color: var(--push); background: rgba(232,64,64,0.12); }
+.day-pill.active-push .dp-ses { color: var(--push); }
+.day-pill.active-pull { border-color: var(--pull); background: rgba(61,190,114,0.12); }
+.day-pill.active-pull .dp-ses { color: var(--pull); }
+.day-pill.active-legs { border-color: var(--legs); background: rgba(77,159,255,0.12); }
+.day-pill.active-legs .dp-ses { color: var(--legs); }
+
+/* ── SESION HEADER ── */
+.session-header {
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  position: relative; overflow: hidden;
+}
+.session-header::before {
+  content: '';
+  position: absolute; top: -30px; right: -20px;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  opacity: 0.08;
+}
+.sh-push { background: linear-gradient(135deg, rgba(232,64,64,0.2), rgba(232,64,64,0.05)); border: 1px solid rgba(232,64,64,0.3); }
+.sh-push::before { background: var(--push); }
+.sh-pull { background: linear-gradient(135deg, rgba(61,190,114,0.2), rgba(61,190,114,0.05)); border: 1px solid rgba(61,190,114,0.3); }
+.sh-pull::before { background: var(--pull); }
+.sh-legs { background: linear-gradient(135deg, rgba(77,159,255,0.2), rgba(77,159,255,0.05)); border: 1px solid rgba(77,159,255,0.3); }
+.sh-legs::before { background: var(--legs); }
+.sh-badge {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; margin-bottom: 4px;
+  font-family: 'DM Sans', sans-serif;
+}
+.sh-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 30px; font-weight: 800; letter-spacing: 0.02em;
+}
+
+/* ── EJERCICIO CARD ── */
+.ex-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.ex-card:focus-within { border-color: var(--border2); }
+.ex-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ex-name {
+  font-size: 15px; font-weight: 500; margin-bottom: 2px;
+}
+.ex-ref {
+  font-size: 12px; color: var(--text3);
+}
+.ex-inputs {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1px; background: var(--border);
+}
+.ex-input-block {
+  background: var(--bg2);
+  padding: 10px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.ex-input-block label {
+  font-size: 10px; color: var(--text3); letter-spacing: 0.05em;
+  text-transform: uppercase; font-weight: 500;
+}
+.ex-input-block input {
+  background: transparent; border: none;
+  font-size: 22px; font-weight: 500;
+  font-family: 'Barlow Condensed', sans-serif;
+  color: var(--text); width: 100%; text-align: center;
+  outline: none; padding: 0;
+}
+.ex-input-block input::placeholder { color: var(--text3); }
+.ex-input-block input:focus { color: var(--gold); }
+
+/* ── SECCION FEEL ── */
+.section-label {
+  font-size: 12px; color: var(--text3); letter-spacing: 0.08em;
+  text-transform: uppercase; font-weight: 600;
+  margin-bottom: 10px; margin-top: 20px;
+}
+.feel-grid {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.feel-btn {
+  padding: 8px 16px;
+  border-radius: 99px;
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  color: var(--text2); font-size: 13px;
+  cursor: pointer; transition: all .2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.feel-btn.sel {
+  background: rgba(212,175,55,0.15);
+  border-color: var(--gold); color: var(--gold);
+}
+.notes-input {
+  width: 100%;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 14px; font-family: 'DM Sans', sans-serif;
+  padding: 12px 14px; resize: none; min-height: 70px;
+  outline: none; transition: border-color .2s;
+}
+.notes-input:focus { border-color: var(--border2); }
+.notes-input::placeholder { color: var(--text3); }
+
+/* ── SAVE BUTTON ── */
+.save-btn {
+  width: 100%; margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: none;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px; font-weight: 700; letter-spacing: 0.06em;
+  cursor: pointer; transition: all .2s; position: relative;
+  overflow: hidden;
+}
+.save-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: white; opacity: 0; transition: opacity .15s;
+}
+.save-btn:active::after { opacity: 0.1; }
+.save-push { background: var(--push); color: white; }
+.save-pull { background: var(--pull); color: #0a0a0a; }
+.save-legs { background: var(--legs); color: white; }
+.toast {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(10px);
+  background: #1c1c1c; border: 1px solid var(--pull);
+  color: var(--pull); padding: 10px 24px; border-radius: 99px;
+  font-size: 13px; font-weight: 500;
+  opacity: 0; transition: all .3s; pointer-events: none; z-index: 200;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── HISTORIAL ── */
+.filter-scroll {
+  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  margin: 0 -20px; padding: 0 20px; margin-bottom: 16px;
+}
+.filter-scroll::-webkit-scrollbar { display: none; }
+.filt-btn {
+  flex-shrink: 0; padding: 6px 14px;
+  border-radius: 99px; border: 1px solid var(--border2);
+  background: var(--bg2); color: var(--text2); font-size: 12px;
+  cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+}
+.filt-btn.active { background: var(--bg4); border-color: var(--border2); color: var(--text); }
+
+.hist-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
+  position: relative;
+}
+.hist-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.hist-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.04em;
+  padding: 3px 10px; border-radius: 6px;
+}
+.hb-push { background: rgba(232,64,64,0.15); color: var(--push); }
+.hb-pull { background: rgba(61,190,114,0.15); color: var(--pull); }
+.hb-legs { background: rgba(77,159,255,0.15); color: var(--legs); }
+.hist-date { font-size: 12px; color: var(--text3); }
+.hist-feel-tag {
+  font-size: 11px; color: var(--text3);
+  background: var(--bg3); border-radius: 6px; padding: 2px 8px;
+}
+.hist-ex-row {
+  display: flex; justify-content: space-between;
+  font-size: 13px; padding: 4px 0;
+  border-bottom: 1px solid var(--border); color: var(--text2);
+}
+.hist-ex-row:last-child { border-bottom: none; }
+.hist-val { font-weight: 500; color: var(--text); }
+.hist-note { font-size: 12px; color: var(--text3); font-style: italic; margin-top: 8px; }
+.del-btn {
+  background: none; border: none; color: var(--text3);
+  cursor: pointer; font-size: 18px; padding: 0 2px; line-height: 1;
+  transition: color .15s;
+}
+.del-btn:hover { color: var(--push); }
+
+/* ── ESTADISTICAS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 16px; }
+.stat-tile {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 14px;
+}
+.stat-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 38px; font-weight: 800; line-height: 1;
+  color: var(--text);
+}
+.stat-lbl { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+.section-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+}
+.section-card-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px; font-weight: 700; letter-spacing: 0.03em;
+  margin-bottom: 14px; color: var(--text);
+}
+.bar-row { margin-bottom: 12px; }
+.bar-label { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.bar-name { font-size: 13px; color: var(--text2); }
+.bar-val { font-size: 13px; font-weight: 500; color: var(--text); }
+.bar-track { background: var(--bg3); border-radius: 99px; height: 6px; overflow: hidden; }
+.bar-fill { height: 6px; border-radius: 99px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+
+.heatmap-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; margin-bottom: 6px; }
+.hm-label { font-size: 10px; color: var(--text3); text-align: center; margin-bottom: 4px; }
+.hm-dot { height: 22px; border-radius: 5px; }
+.hm-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.hm-legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text3); }
+.hm-dot-sm { width: 10px; height: 10px; border-radius: 3px; }
+
+/* ── PROGRESO ── */
+.pr-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.pr-item:last-child { border-bottom: none; }
+.pr-name { font-size: 13px; font-weight: 500; }
+.pr-date { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.pr-value { text-align: right; }
+.pr-main { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; }
+.pr-vol { font-size: 11px; color: var(--text3); }
+
+.vol-bars { display: flex; align-items: flex-end; gap: 5px; height: 90px; margin-bottom: 8px; }
+.vol-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; }
+.vol-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 4px; transition: height .4s; }
+.vol-bar-lbl { font-size: 9px; color: var(--text3); text-align: center; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* ── RUTINA ── */
+.rutina-session {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+}
+.rutina-hdr {
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; border-bottom: 1px solid var(--border);
+}
+.rutina-hdr-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px; font-weight: 700; letter-spacing: 0.03em;
+}
+.rutina-body { padding: 0 16px; display: none; }
+.rutina-body.open { display: block; }
+.rutina-ex-row {
+  display: flex; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.rutina-ex-row:last-child { border-bottom: none; }
+.rutina-ex-name { font-weight: 500; color: var(--text); }
+.rutina-ex-ref { color: var(--text3); font-size: 12px; margin-top: 2px; }
+
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text3); font-size: 14px; }
+.empty-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
+
+/* ── ANIMACIONES ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page.active { animation: fadeUp .25s ease; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">PPL <span>TRACKER</span></div>
+  <div class="nav-tabs" id="nav-tabs">
+    <button class="tab active" onclick="goPage('registro',0)">Registrar</button>
+    <button class="tab" onclick="goPage('historial',1)">Historial</button>
+    <button class="tab" onclick="goPage('stats',2)">Stats</button>
+    <button class="tab" onclick="goPage('progreso',3)">Progreso</button>
+    <button class="tab" onclick="goPage('rutina',4)">Rutina</button>
+  </div>
+</div>
+
+<div id="p-registro" class="page active">
+  <div class="day-scroll" id="day-scroll"></div>
+  <div id="reg-body"></div>
+</div>
+
+<div id="p-historial" class="page">
+  <div class="filter-scroll" id="hist-filters"></div>
+  <div id="hist-list"></div>
+</div>
+
+<div id="p-stats" class="page">
+  <div class="stats-grid" id="main-stats"></div>
+  <div class="section-card">
+    <div class="section-card-title">Sesiones por tipo</div>
+    <div id="type-bars"></div>
+  </div>
+  <div class="section-card">
+    <div class="section-card-title">Como te sentiste</div>
+    <div id="feel-bars"></div>
+  </div>
+  <div class="section-card">
+    <div class="section-card-title">Ultimas 4 semanas</div>
+    <div id="heatmap"></div>
+  </div>
+</div>
+
+<div id="p-progreso" class="page">
+  <div class="section-card" style="margin-bottom:12px">
+    <div class="section-card-title">Records personales</div>
+    <div id="pr-list"></div>
+  </div>
+  <div class="section-card">
+    <div class="section-card-title">Volumen por sesion</div>
+    <div id="vol-chart"></div>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px">Ultimas sesiones · altura = series × reps totales</div>
+  </div>
+</div>
+
+<div id="p-rutina" class="page">
+  <div id="rutina-cards"></div>
+</div>
+
+<div class="toast" id="toast">Sesion guardada</div>
+
+<script>
+const SESSIONS = {
+  'PUSH A':{type:'push',label:'Push A',sub:'Volumen · Empuje',exercises:[
+    {name:'Flexion estandar',ref:'4× · 12-15 reps · 90 seg'},
+    {name:'Pike push-up',ref:'4× · 10-12 reps · 90 seg'},
+    {name:'Dips en paralelas',ref:'4× · 8-12 reps · 2 min'},
+    {name:'Flexion diamante',ref:'3× · 8-10 reps · 90 seg'},
+    {name:'Flexion declinada',ref:'3× · 10-12 reps · 90 seg'},
+  ]},
+  'PULL A':{type:'pull',label:'Pull A',sub:'Volumen · Jale',exercises:[
+    {name:'Pull-up ancho prono',ref:'4× · 5-8 reps · 2 min'},
+    {name:'Chin-up supino',ref:'4× · 6-10 reps · 2 min'},
+    {name:'Pull-up neutro',ref:'3× · 6-8 reps · 2 min'},
+    {name:'Australian pull-up',ref:'3× · 12-15 reps · 90 seg'},
+    {name:'Scapular pull-up',ref:'3× · 10-12 reps · 60 seg'},
+  ]},
+  'LEGS A':{type:'legs',label:'Legs A',sub:'Volumen · Piernas',exercises:[
+    {name:'Sentadilla bulgara',ref:'4× · 8-10 c/l · 90 seg'},
+    {name:'Pistola asistida',ref:'3× · 5-6 c/l · 2 min'},
+    {name:'Hip thrust',ref:'4× · 15-20 reps · 60 seg'},
+    {name:'Nordic curl',ref:'3× · 4-6 reps · 2 min'},
+    {name:'Elevacion gemelos',ref:'4× · 20-25 reps · 45 seg'},
+  ]},
+  'PUSH B':{type:'push',label:'Push B',sub:'Intensidad · Empuje',exercises:[
+    {name:'Pike push-up elevado',ref:'4× · 8-10 reps · 2 min'},
+    {name:'Dips pecho inclinado',ref:'4× · 8-10 reps · 2 min'},
+    {name:'Flexion arquera',ref:'3× · 6-8 c/l · 90 seg'},
+    {name:'Pseudo planche',ref:'3× · 6-8 reps · 90 seg'},
+    {name:'Extension triceps barra',ref:'3× · 10-12 reps · 90 seg'},
+  ]},
+  'PULL B':{type:'pull',label:'Pull B',sub:'Intensidad · Jale',exercises:[
+    {name:'Pull-up typewriter',ref:'3× · 4-6 c/l · 2.5 min'},
+    {name:'Chin-up con pausa',ref:'4× · 5-7 reps · 2 min'},
+    {name:'Australian archer',ref:'3× · 8 c/l · 90 seg'},
+    {name:'Knee raise colgado',ref:'3× · 12-15 reps · 90 seg'},
+    {name:'Negativas muscle-up',ref:'3× · 3-5 reps · 3 min'},
+  ]},
+  'LEGS B':{type:'legs',label:'Legs B',sub:'Intensidad · Core',exercises:[
+    {name:'Pistola libre',ref:'4× · 4-6 c/l · 2 min'},
+    {name:'Jump squat',ref:'4× · 8-10 reps · 90 seg'},
+    {name:'Step-up explosivo',ref:'3× · 10 c/l · 90 seg'},
+    {name:'L-sit colgado',ref:'4× · 10-20 seg · 90 seg'},
+    {name:'Dragon flag negativa',ref:'3× · 4-6 reps · 2 min'},
+    {name:'Gemelos unilateral',ref:'3× · 15-20 c/l · 45 seg'},
+  ]},
+}
+const DAYS_LIST = [
+  {id:'PUSH A',dia:'LUN',type:'push'},
+  {id:'PULL A',dia:'MAR',type:'pull'},
+  {id:'LEGS A',dia:'MIE',type:'legs'},
+  {id:'PUSH B',dia:'JUE',type:'push'},
+  {id:'PULL B',dia:'VIE',type:'pull'},
+  {id:'LEGS B',dia:'SAB',type:'legs'},
+  {id:'REST',dia:'DOM',type:'rest'},
+]
+const FEELS = ['Excelente','Bien','Regular','Cansado','Mal']
+const TYPE_COLOR = {push:'#E84040',pull:'#3DBE72',legs:'#4D9FFF'}
+const TYPE_HB = {push:'hb-push',pull:'hb-pull',legs:'hb-legs'}
+
+let curSes = null, curFeel = null, histFilt = 'all'
+
+function getH(){ try{ return JSON.parse(localStorage.getItem('ppl_data')||'[]') }catch(e){ return [] } }
+function saveH(h){ localStorage.setItem('ppl_data', JSON.stringify(h)) }
+
+function goPage(id, idx){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
+  document.getElementById('p-'+id).classList.add('active')
+  document.querySelectorAll('.tab')[idx].classList.add('active')
+  if(id==='historial') renderHist()
+  if(id==='stats') renderStats()
+  if(id==='progreso') renderProgreso()
+  if(id==='rutina') renderRutina()
+}
+
+function initDays(){
+  document.getElementById('day-scroll').innerHTML = DAYS_LIST.map(d=>`
+    <div class="day-pill" id="dp-${d.id.replace(' ','-')}" onclick="selectSes('${d.id}')">
+      <div class="dp-dia">${d.dia}</div>
+      <div class="dp-ses">${d.id==='REST'?'REST':d.id.split(' ')[0]+'\u00A0'+d.id.split(' ')[1]}</div>
+    </div>
+  `).join('')
+}
+
+function selectSes(id){
+  curSes = id
+  document.querySelectorAll('.day-pill').forEach(p=>p.className='day-pill')
+  const pill = document.getElementById('dp-'+id.replace(' ','-'))
+  if(id==='REST'){
+    pill.style.borderColor='#555'; pill.querySelector('.dp-ses').style.color='#888'
+    document.getElementById('reg-body').innerHTML=`<div style="text-align:center;padding:48px 20px;color:var(--text3)"><div style="font-size:40px;margin-bottom:12px">🌙</div><div style="font-size:16px;font-weight:500;color:var(--text2);margin-bottom:8px">Domingo de descanso</div><div style="font-size:13px">Sal a caminar 20-30 min.<br>El musculo crece mientras descansas.</div></div>`
+    return
+  }
+  const s = SESSIONS[id]
+  pill.classList.add('active-'+s.type)
+  const typeColor = TYPE_COLOR[s.type]
+  document.getElementById('reg-body').innerHTML = `
+    <div class="session-header sh-${s.type}">
+      <div class="sh-badge" style="color:${typeColor}">${s.type.toUpperCase()} · ${s.sub.split(' · ')[1].toUpperCase()}</div>
+      <div class="sh-title">${s.label}</div>
+    </div>
+    ${s.exercises.map((ex,i)=>`
+      <div class="ex-card">
+        <div class="ex-header">
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-ref">${ex.ref}</div>
+        </div>
+        <div class="ex-inputs">
+          <div class="ex-input-block">
+            <label>Series</label>
+            <input type="number" id="s-${i}" inputmode="numeric" min="0" max="20" placeholder="—">
+          </div>
+          <div class="ex-input-block">
+            <label>Reps</label>
+            <input type="number" id="r-${i}" inputmode="numeric" min="0" max="200" placeholder="—">
+          </div>
+          <div class="ex-input-block">
+            <label>Peso kg</label>
+            <input type="number" id="p-${i}" inputmode="decimal" min="0" max="200" step="0.5" placeholder="—">
+          </div>
+        </div>
+      </div>
+    `).join('')}
+    <div class="section-label">Como te sentiste</div>
+    <div class="feel-grid">${FEELS.map(f=>`<button class="feel-btn" onclick="pickFeel('${f}',this)">${f}</button>`).join('')}</div>
+    <div class="section-label">Notas (opcional)</div>
+    <textarea class="notes-input" id="reg-notes" placeholder="PRs, lesiones, observaciones..."></textarea>
+    <button class="save-btn save-${s.type}" onclick="doSave('${id}')">GUARDAR SESION</button>
+  `
+}
+
+function pickFeel(f, btn){
+  curFeel = f
+  document.querySelectorAll('.feel-btn').forEach(b=>b.classList.remove('sel'))
+  btn.classList.add('sel')
+}
+
+function doSave(id){
+  const s = SESSIONS[id]
+  const exData = s.exercises.map((ex,i)=>({
+    name:ex.name,
+    series:parseInt(document.getElementById('s-'+i).value)||0,
+    reps:parseInt(document.getElementById('r-'+i).value)||0,
+    peso:parseFloat(document.getElementById('p-'+i).value)||0,
+  }))
+  const now = new Date()
+  const h = getH()
+  h.unshift({
+    id:Date.now(), dateRaw:Date.now(),
+    date:now.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}),
+    session:id, type:s.type,
+    exercises:exData,
+    feel:curFeel||'—',
+    notes:document.getElementById('reg-notes').value.trim()
+  })
+  saveH(h)
+  const t = document.getElementById('toast')
+  t.classList.add('show')
+  setTimeout(()=>t.classList.remove('show'),2200)
+  document.getElementById('reg-notes').value=''
+  curFeel=null
+  document.querySelectorAll('.feel-btn').forEach(b=>b.classList.remove('sel'))
+}
+
+function renderHist(){
+  const h = getH()
+  const skeys = Object.keys(SESSIONS)
+  document.getElementById('hist-filters').innerHTML =
+    ['all',...skeys].map(k=>`<button class="filt-btn${histFilt===k?' active':''}" onclick="setFilt('${k}',this)">${k==='all'?'Todas':k}</button>`).join('')
+  const filtered = histFilt==='all'?h:h.filter(r=>r.session===histFilt)
+  const el = document.getElementById('hist-list')
+  if(!filtered.length){ el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div>Sin sesiones registradas aun</div>'; return }
+  el.innerHTML = filtered.map(r=>`
+    <div class="hist-card">
+      <div class="hist-top">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="hist-badge ${TYPE_HB[r.type]||'hb-push'}">${r.session}</span>
+          <span class="hist-feel-tag">${r.feel}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="hist-date">${r.date}</span>
+          <button class="del-btn" onclick="delRec(${r.id})">✕</button>
+        </div>
+      </div>
+      <div>
+        ${r.exercises.filter(e=>e.series>0||e.reps>0).map(e=>`
+          <div class="hist-ex-row">
+            <span>${e.name}</span>
+            <span class="hist-val">${e.series>0?e.series+'×':''} ${e.reps>0?e.reps+' reps':''} ${e.peso>0?'· +'+e.peso+'kg':''}</span>
+          </div>
+        `).join('')}
+      </div>
+      ${r.notes?`<div class="hist-note">"${r.notes}"</div>`:''}
+    </div>
+  `).join('')
+}
+
+function setFilt(f, btn){
+  histFilt = f
+  document.querySelectorAll('.filt-btn').forEach(b=>b.classList.remove('active'))
+  btn.classList.add('active')
+  renderHist()
+}
+
+function delRec(id){
+  saveH(getH().filter(r=>r.id!==id))
+  renderHist()
+}
+
+function renderStats(){
+  const h = getH()
+  const total = h.length
+  const weeks = total>0?Math.max(1,Math.ceil((Date.now()-h[h.length-1].dateRaw)/(7*24*3600*1000))):0
+  const avg = weeks>0?(total/weeks).toFixed(1):0
+  const feelMap = {}; h.forEach(r=>{if(r.feel&&r.feel!=='—') feelMap[r.feel]=(feelMap[r.feel]||0)+1})
+  const topFeel = Object.entries(feelMap).sort((a,b)=>b[1]-a[1])[0]
+  document.getElementById('main-stats').innerHTML = `
+    <div class="stat-tile"><div class="stat-num">${total}</div><div class="stat-lbl">Sesiones totales</div></div>
+    <div class="stat-tile"><div class="stat-num">${weeks}</div><div class="stat-lbl">Semanas activo</div></div>
+    <div class="stat-tile"><div class="stat-num">${avg}</div><div class="stat-lbl">Sesiones / semana</div></div>
+    <div class="stat-tile"><div class="stat-num" style="font-size:22px;padding-top:6px">${topFeel?topFeel[0]:'—'}</div><div class="stat-lbl">Sensacion mas comun</div></div>
+  `
+  const tc = {}; Object.keys(SESSIONS).forEach(k=>tc[k]=h.filter(r=>r.session===k).length)
+  const maxT = Math.max(...Object.values(tc),1)
+  document.getElementById('type-bars').innerHTML = Object.entries(tc).map(([k,v])=>`
+    <div class="bar-row">
+      <div class="bar-label">
+        <span class="bar-name" style="color:${TYPE_COLOR[SESSIONS[k].type]};font-weight:500">${k}</span>
+        <span class="bar-val">${v}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/maxT*100)}%;background:${TYPE_COLOR[SESSIONS[k].type]}"></div></div>
+    </div>
+  `).join('')
+  const maxF = Math.max(...Object.values(feelMap),1)
+  document.getElementById('feel-bars').innerHTML = FEELS.filter(f=>feelMap[f]).map(f=>`
+    <div class="bar-row">
+      <div class="bar-label"><span class="bar-name">${f}</span><span class="bar-val">${feelMap[f]||0}x</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round((feelMap[f]||0)/maxF*100)}%;background:var(--gold)"></div></div>
+    </div>
+  `).join('') || '<div style="color:var(--text3);font-size:13px;padding:8px 0">Sin datos aun</div>'
+  const now2 = Date.now()
+  const dotC = {push:TYPE_COLOR.push,pull:TYPE_COLOR.pull,legs:TYPE_COLOR.legs}
+  let heatHTML = `<div class="heatmap-grid">${['L','M','X','J','V','S','D'].map(d=>`<div class="hm-label">${d}</div>`).join('')}</div>`
+  for(let w=3;w>=0;w--){
+    heatHTML += '<div class="heatmap-grid">'
+    for(let d=0;d<7;d++){
+      const ds = now2-(w+1)*7*86400000+d*86400000
+      const de = ds+86400000
+      const rec = h.find(r=>r.dateRaw>=ds&&r.dateRaw<de)
+      const bg = rec?(dotC[rec.type]||'#666'):'var(--bg3)'
+      heatHTML += `<div class="hm-dot" style="background:${bg}"></div>`
+    }
+    heatHTML += '</div>'
+  }
+  heatHTML += `<div class="hm-legend">${Object.entries({push:'Empuje',pull:'Jale',legs:'Piernas'}).map(([k,v])=>`<div class="hm-legend-item"><div class="hm-dot-sm" style="background:${dotC[k]}"></div>${v}</div>`).join('')}</div>`
+  document.getElementById('heatmap').innerHTML = heatHTML
+}
+
+function renderProgreso(){
+  const h = getH()
+  const prs = {}
+  h.forEach(r=>r.exercises.forEach(ex=>{
+    if(ex.reps>0){
+      const vol = ex.series*ex.reps
+      if(!prs[ex.name]||vol>prs[ex.name].vol) prs[ex.name]={vol,series:ex.series,reps:ex.reps,peso:ex.peso,date:r.date,type:r.type}
+    }
+  }))
+  const prEl = document.getElementById('pr-list')
+  if(!Object.keys(prs).length){ prEl.innerHTML='<div class="empty-state" style="padding:20px 0"><div class="empty-icon">🏆</div>Registra sesiones para ver tus PRs</div>'; }
+  else prEl.innerHTML = Object.entries(prs).map(([n,p])=>`
+    <div class="pr-item">
+      <div><div class="pr-name">${n}</div><div class="pr-date">${p.date}</div></div>
+      <div class="pr-value">
+        <div class="pr-main" style="color:${TYPE_COLOR[p.type]||'var(--text)'}">${p.series>0?p.series+'×':''} ${p.reps} reps${p.peso>0?' · +'+p.peso+'kg':''}</div>
+        <div class="pr-vol">${p.vol} vol total</div>
+      </div>
+    </div>
+  `).join('')
+  const last = h.slice(0,12).reverse()
+  const volEl = document.getElementById('vol-chart')
+  if(!last.length){ volEl.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0;text-align:center">Sin datos aun</div>'; return }
+  const vols = last.map(r=>r.exercises.reduce((s,e)=>s+e.series*e.reps,0))
+  const maxV = Math.max(...vols,1)
+  volEl.innerHTML = `<div class="vol-bars">${last.map((r,i)=>`
+    <div class="vol-bar-wrap">
+      <div class="vol-bar" style="background:${TYPE_COLOR[r.type]||'#888'};height:${Math.max(4,Math.round(vols[i]/maxV*86))}px"></div>
+      <div class="vol-bar-lbl">${r.session.replace(' ','<br>')}</div>
+    </div>
+  `).join('')}</div>`
+}
+
+function renderRutina(){
+  document.getElementById('rutina-cards').innerHTML = Object.entries(SESSIONS).map(([id,s])=>`
+    <div class="rutina-session">
+      <div class="rutina-hdr" onclick="toggleRutina('rb-${id.replace(' ','-')}')">
+        <span class="hist-badge ${TYPE_HB[s.type]}">${id}</span>
+        <div>
+          <div class="rutina-hdr-title">${s.label}</div>
+          <div style="font-size:12px;color:var(--text3)">${s.sub}</div>
+        </div>
+      </div>
+      <div class="rutina-body" id="rb-${id.replace(' ','-')}">
+        ${s.exercises.map(ex=>`
+          <div class="rutina-ex-row">
+            <div>
+              <div class="rutina-ex-name">${ex.name}</div>
+            </div>
+            <div class="rutina-ex-ref">${ex.ref}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('')
+}
+
+function toggleRutina(id){
+  const el = document.getElementById(id)
+  el.classList.toggle('open')
+}
+
+initDays()
+</script>
+</body>
+</html>
