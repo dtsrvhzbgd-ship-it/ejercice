@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0a">
+<title>Calorias Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #D4AF37;
+  --green: #3DBE72;
+  --red: #E84040;
+  --blue: #4D9FFF;
+  --orange: #FF8C42;
+  --purple: #9B72CF;
+  --bg: #0a0a0a;
+  --bg2: #141414;
+  --bg3: #1c1c1c;
+  --bg4: #252525;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0f0f0;
+  --text2: #999;
+  --text3: #555;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --meta: 3200;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { background: var(--bg); }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: 90px;
+}
+
+/* TOPBAR */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,10,10,0.94);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px 0;
+}
+.topbar-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: 0.04em; margin-bottom: 12px; }
+.topbar-title span { color: var(--gold); }
+.nav-tabs { display: flex; overflow-x: auto; scrollbar-width: none; }
+.nav-tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 10px 16px 12px; font-size: 13px; font-weight: 500; color: var(--text3); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; white-space: nowrap; transition: all .2s; font-family: 'DM Sans', sans-serif; }
+.tab.active { color: var(--text); border-bottom-color: var(--gold); }
+
+/* PAGES */
+.page { display: none; padding: 20px; }
+.page.active { display: block; animation: fadeUp .25s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* RING DE CALORÍAS */
+.ring-wrap {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px 20px 20px;
+  margin-bottom: 16px; text-align: center;
+}
+.ring-container { position: relative; width: 160px; height: 160px; margin: 0 auto 16px; }
+.ring-svg { transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--bg3); stroke-width: 12; }
+.ring-fill { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1); }
+.ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-kcal { font-family: 'Barlow Condensed', sans-serif; font-size: 38px; font-weight: 800; line-height: 1; }
+.ring-label { font-size: 11px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+.ring-meta { display: flex; justify-content: center; gap: 20px; }
+.ring-meta-item { text-align: center; }
+.ring-meta-num { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; }
+.ring-meta-lbl { font-size: 11px; color: var(--text3); }
+
+/* MACROS BAR */
+.macros-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px; }
+.macro-tile { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 10px; text-align: center; }
+.macro-num { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700; }
+.macro-lbl { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.macro-bar-wrap { height: 4px; background: var(--bg3); border-radius: 99px; margin-top: 6px; overflow: hidden; }
+.macro-bar { height: 4px; border-radius: 99px; transition: width .5s; }
+
+/* META SELECTOR */
+.meta-row { display: flex; align-items: center; gap: 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px; }
+.meta-row label { font-size: 13px; color: var(--text2); flex: 1; }
+.meta-input { background: transparent; border: none; color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; width: 80px; text-align: right; outline: none; }
+
+/* BUSQUEDA */
+.search-wrap { position: relative; margin-bottom: 12px; }
+.search-input { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 15px; font-family: 'DM Sans', sans-serif; padding: 12px 16px 12px 42px; outline: none; transition: border-color .2s; }
+.search-input:focus { border-color: var(--border2); }
+.search-input::placeholder { color: var(--text3); }
+.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
+
+/* CATEGORÍAS */
+.cat-scroll { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 0 20px; margin-bottom: 14px; }
+.cat-scroll::-webkit-scrollbar { display: none; }
+.cat-btn { flex-shrink: 0; padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); font-size: 12px; cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif; font-weight: 500; white-space: nowrap; }
+.cat-btn.active { background: var(--bg4); border-color: var(--gold); color: var(--gold); }
+
+/* FOOD ITEMS */
+.food-list { display: flex; flex-direction: column; gap: 8px; }
+.food-item { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.food-main { display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer; }
+.food-emoji { font-size: 26px; width: 36px; text-align: center; flex-shrink: 0; }
+.food-info { flex: 1; min-width: 0; }
+.food-name { font-size: 14px; font-weight: 500; }
+.food-cal { font-size: 12px; color: var(--text3); margin-top: 1px; }
+.food-add-btn { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text2); cursor: pointer; flex-shrink: 0; transition: all .2s; font-family: 'DM Sans', sans-serif; line-height: 1; }
+.food-add-btn:active { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+.food-qty-row { display: flex; align-items: center; gap: 8px; padding: 0 14px 12px; }
+.food-qty-row label { font-size: 12px; color: var(--text3); }
+.qty-input { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 15px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; padding: 6px 10px; width: 80px; outline: none; text-align: center; }
+.qty-unit { font-size: 12px; color: var(--text3); }
+.add-confirm-btn { margin-left: auto; background: var(--gold); border: none; border-radius: var(--radius-sm); color: var(--bg); font-size: 12px; font-weight: 600; font-family: 'DM Sans', sans-serif; padding: 7px 14px; cursor: pointer; }
+
+/* LOG DEL DÍA */
+.log-empty { text-align: center; padding: 40px 20px; color: var(--text3); font-size: 14px; }
+.log-empty-icon { font-size: 36px; margin-bottom: 10px; opacity: .5; }
+.log-item { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.log-emoji { font-size: 22px; width: 30px; text-align: center; flex-shrink: 0; }
+.log-info { flex: 1; min-width: 0; }
+.log-name { font-size: 14px; font-weight: 500; }
+.log-detail { font-size: 12px; color: var(--text3); margin-top: 1px; }
+.log-kcal { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--gold); flex-shrink: 0; }
+.log-del { background: none; border: none; color: var(--text3); font-size: 18px; cursor: pointer; padding: 0 2px; flex-shrink: 0; }
+
+/* HISTORIAL */
+.hist-day-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; }
+.hist-day-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.hist-day-date { font-size: 13px; color: var(--text2); font-weight: 500; }
+.hist-day-kcal { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700; }
+.hist-day-bar { height: 6px; background: var(--bg3); border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
+.hist-day-fill { height: 6px; border-radius: 99px; }
+.hist-day-items { font-size: 12px; color: var(--text3); }
+
+/* TOAST */
+.toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--bg3); border: 1px solid var(--green); color: var(--green); padding: 10px 24px; border-radius: 99px; font-size: 13px; font-weight: 500; opacity: 0; transition: all .3s; pointer-events: none; z-index: 200; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.section-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.section-card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.03em; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">CALORIAS <span>TRACKER</span></div>
+  <div class="nav-tabs">
+    <button class="tab active" onclick="goPage('hoy',0)">Hoy</button>
+    <button class="tab" onclick="goPage('agregar',1)">Agregar</button>
+    <button class="tab" onclick="goPage('historial',2)">Historial</button>
+  </div>
+</div>
+
+<div id="p-hoy" class="page active">
+  <div class="ring-wrap">
+    <div class="ring-container">
+      <svg class="ring-svg" width="160" height="160" viewBox="0 0 160 160">
+        <circle class="ring-bg" cx="80" cy="80" r="68"/>
+        <circle class="ring-fill" id="ring-fill" cx="80" cy="80" r="68" stroke="#D4AF37" stroke-dasharray="427" stroke-dashoffset="427"/>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-kcal" id="ring-kcal">0</div>
+        <div class="ring-label">de <span id="ring-meta">3200</span> kcal</div>
+      </div>
+    </div>
+    <div class="ring-meta">
+      <div class="ring-meta-item">
+        <div class="ring-meta-num" id="rng-restantes" style="color:var(--green)">3200</div>
+        <div class="ring-meta-lbl">Restantes</div>
+      </div>
+      <div class="ring-meta-item">
+        <div class="ring-meta-num" id="rng-comidas">0</div>
+        <div class="ring-meta-lbl">Comidas</div>
+      </div>
+      <div class="ring-meta-item">
+        <div class="ring-meta-num" id="rng-prot" style="color:var(--blue)">0g</div>
+        <div class="ring-meta-lbl">Proteina</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="meta-row">
+    <label>Meta diaria de calorias</label>
+    <input class="meta-input" type="number" id="meta-input" value="3200" inputmode="numeric" onchange="updateMeta()">
+    <span style="font-size:12px;color:var(--text3)">kcal</span>
+  </div>
+
+  <div class="macros-row">
+    <div class="macro-tile">
+      <div class="macro-num" id="mac-prot" style="color:var(--blue)">0g</div>
+      <div class="macro-lbl">Proteina</div>
+      <div class="macro-bar-wrap"><div class="macro-bar" id="bar-prot" style="background:var(--blue);width:0%"></div></div>
+    </div>
+    <div class="macro-tile">
+      <div class="macro-num" id="mac-carb" style="color:var(--orange)">0g</div>
+      <div class="macro-lbl">Carbos</div>
+      <div class="macro-bar-wrap"><div class="macro-bar" id="bar-carb" style="background:var(--orange);width:0%"></div></div>
+    </div>
+    <div class="macro-tile">
+      <div class="macro-num" id="mac-fat" style="color:var(--purple)">0g</div>
+      <div class="macro-lbl">Grasas</div>
+      <div class="macro-bar-wrap"><div class="macro-bar" id="bar-fat" style="background:var(--purple);width:0%"></div></div>
+    </div>
+  </div>
+
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;margin-bottom:12px;letter-spacing:0.03em">Lo que comiste hoy</div>
+  <div id="log-list"></div>
+</div>
+
+<div id="p-agregar" class="page">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" type="text" id="search-input" placeholder="Buscar alimento..." oninput="renderFoods()">
+  </div>
+  <div class="cat-scroll" id="cat-scroll"></div>
+  <div class="food-list" id="food-list"></div>
+</div>
+
+<div id="p-historial" class="page">
+  <div id="hist-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const FOODS = [
+  // PROTEINAS
+  {id:'huevo',      name:'Huevo entero',     emoji:'🥚', cat:'Proteina', unit:'unidad', unitW:60,  cal:90,  p:7,  c:0.5, f:6},
+  {id:'claras',     name:'Claras de huevo',  emoji:'🥚', cat:'Proteina', unit:'unidad', unitW:33,  cal:17,  p:3.5,c:0.2, f:0},
+  {id:'pollo',      name:'Pechuga de pollo', emoji:'🍗', cat:'Proteina', unit:'g',      unitW:100, cal:165, p:31, c:0,   f:3.6},
+  {id:'carne',      name:'Carne de res',     emoji:'🥩', cat:'Proteina', unit:'g',      unitW:100, cal:250, p:26, c:0,   f:16},
+  {id:'atun',       name:'Atun en lata',     emoji:'🐟', cat:'Proteina', unit:'lata',   unitW:140, cal:130, p:29, c:0,   f:1},
+  {id:'salmon',     name:'Salmon',           emoji:'🐟', cat:'Proteina', unit:'g',      unitW:100, cal:208, p:20, c:0,   f:13},
+  {id:'cerdo',      name:'Lomo de cerdo',    emoji:'🥩', cat:'Proteina', unit:'g',      unitW:100, cal:242, p:27, c:0,   f:14},
+  {id:'cottage',    name:'Queso cottage',    emoji:'🧀', cat:'Proteina', unit:'g',      unitW:100, cal:98,  p:11, c:3.4, f:4.3},
+  {id:'queso',      name:'Queso amarillo',   emoji:'🧀', cat:'Proteina', unit:'tajada', unitW:20,  cal:80,  p:4.5,c:0.5, f:6.5},
+  // LACTEOS
+  {id:'leche',      name:'Leche entera',     emoji:'🥛', cat:'Lacteos',  unit:'vaso',   unitW:240, cal:149, p:8,  c:12,  f:8},
+  {id:'leche_des',  name:'Leche descremada', emoji:'🥛', cat:'Lacteos',  unit:'vaso',   unitW:240, cal:83,  p:8,  c:12,  f:0.2},
+  {id:'yogur',      name:'Yogur griego',     emoji:'🍶', cat:'Lacteos',  unit:'g',      unitW:100, cal:97,  p:9,  c:6,   f:5},
+  {id:'yogur_nat',  name:'Yogur natural',    emoji:'🍶', cat:'Lacteos',  unit:'vaso',   unitW:200, cal:122, p:7,  c:17,  f:2},
+  // CARBOHIDRATOS
+  {id:'arroz',      name:'Arroz blanco cocido',emoji:'🍚',cat:'Carbos',  unit:'g',      unitW:100, cal:130, p:2.7,c:28,  f:0.3},
+  {id:'pasta',      name:'Pasta cocida',     emoji:'🍝', cat:'Carbos',  unit:'g',      unitW:100, cal:131, p:5,  c:25,  f:1.1},
+  {id:'avena',      name:'Avena en hojuelas',emoji:'🌾', cat:'Carbos',  unit:'g',      unitW:100, cal:389, p:17, c:66,  f:7},
+  {id:'pan',        name:'Pan integral',     emoji:'🍞', cat:'Carbos',  unit:'tajada', unitW:30,  cal:75,  p:3,  c:14,  f:1},
+  {id:'papa',       name:'Papa cocida',      emoji:'🥔', cat:'Carbos',  unit:'g',      unitW:100, cal:87,  p:1.9,c:20,  f:0.1},
+  {id:'platano',    name:'Platano maduro',   emoji:'🍌', cat:'Carbos',  unit:'unidad', unitW:120, cal:105, p:1.3,c:27,  f:0.4},
+  {id:'banano',     name:'Banano',           emoji:'🍌', cat:'Carbos',  unit:'unidad', unitW:100, cal:89,  p:1.1,c:23,  f:0.3},
+  {id:'arepa',      name:'Arepa de maiz',    emoji:'🫓', cat:'Carbos',  unit:'unidad', unitW:80,  cal:200, p:4,  c:40,  f:2},
+  {id:'granola',    name:'Granola',          emoji:'🌾', cat:'Carbos',  unit:'g',      unitW:100, cal:471, p:10, c:64,  f:20},
+  // GRASAS / FRUTOS SECOS
+  {id:'aguacate',   name:'Aguacate',         emoji:'🥑', cat:'Grasas',  unit:'mitad',  unitW:75,  cal:120, p:1.5,c:6.4, f:11},
+  {id:'mani',       name:'Mani tostado',     emoji:'🥜', cat:'Grasas',  unit:'g',      unitW:100, cal:567, p:26, c:16,  f:49},
+  {id:'crema_mani', name:'Crema de mani',    emoji:'🥜', cat:'Grasas',  unit:'cuchar', unitW:32,  cal:190, p:8,  c:7,   f:16},
+  {id:'almendras',  name:'Almendras',        emoji:'🫘', cat:'Grasas',  unit:'g',      unitW:100, cal:579, p:21, c:22,  f:50},
+  {id:'aceite',     name:'Aceite de oliva',  emoji:'🫙', cat:'Grasas',  unit:'cuchar', unitW:14,  cal:119, p:0,  c:0,   f:14},
+  {id:'coco',       name:'Coco rallado',     emoji:'🥥', cat:'Grasas',  unit:'g',      unitW:100, cal:354, p:3.3,c:15,  f:33},
+  // LEGUMBRES
+  {id:'frijoles',   name:'Frijoles cocidos', emoji:'🫘', cat:'Legumbres',unit:'g',      unitW:100, cal:127, p:8.7,c:22,  f:0.5},
+  {id:'lentejas',   name:'Lentejas cocidas', emoji:'🫘', cat:'Legumbres',unit:'g',      unitW:100, cal:116, p:9,  c:20,  f:0.4},
+  {id:'garbanzos',  name:'Garbanzos',        emoji:'🫘', cat:'Legumbres',unit:'g',      unitW:100, cal:164, p:9,  c:27,  f:2.6},
+  {id:'arveja',     name:'Arvejas cocidas',  emoji:'🟢', cat:'Legumbres',unit:'g',      unitW:100, cal:81,  p:5.4,c:14,  f:0.4},
+  // FRUTAS
+  {id:'mango',      name:'Mango',            emoji:'🥭', cat:'Frutas',  unit:'unidad', unitW:200, cal:130, p:1,  c:35,  f:0.5},
+  {id:'manzana',    name:'Manzana',          emoji:'🍎', cat:'Frutas',  unit:'unidad', unitW:182, cal:95,  p:0.5,c:25,  f:0.3},
+  {id:'naranja',    name:'Naranja',          emoji:'🍊', cat:'Frutas',  unit:'unidad', unitW:131, cal:62,  p:1.2,c:15,  f:0.2},
+  {id:'fresa',      name:'Fresas',           emoji:'🍓', cat:'Frutas',  unit:'g',      unitW:100, cal:32,  p:0.7,c:7.7, f:0.3},
+  {id:'uva',        name:'Uvas',             emoji:'🍇', cat:'Frutas',  unit:'g',      unitW:100, cal:67,  p:0.6,c:17,  f:0.4},
+  // VERDURAS
+  {id:'brocoli',    name:'Brocoli',          emoji:'🥦', cat:'Verduras', unit:'g',      unitW:100, cal:34,  p:2.8,c:7,   f:0.4},
+  {id:'espinaca',   name:'Espinaca',         emoji:'🥬', cat:'Verduras', unit:'g',      unitW:100, cal:23,  p:2.9,c:3.6, f:0.4},
+  {id:'zanahoria',  name:'Zanahoria',        emoji:'🥕', cat:'Verduras', unit:'unidad', unitW:60,  cal:25,  p:0.6,c:6,   f:0.1},
+  {id:'tomate',     name:'Tomate',           emoji:'🍅', cat:'Verduras', unit:'unidad', unitW:120, cal:22,  p:1.1,c:4.8, f:0.2},
+  // EXTRAS
+  {id:'azucar',     name:'Azucar',           emoji:'🍯', cat:'Extras',   unit:'cuchar', unitW:12,  cal:46,  p:0,  c:12,  f:0},
+  {id:'miel',       name:'Miel de abeja',    emoji:'🍯', cat:'Extras',   unit:'cuchar', unitW:21,  cal:64,  p:0.1,c:17,  f:0},
+  {id:'chocolate',  name:'Chocolate negro',  emoji:'🍫', cat:'Extras',   unit:'g',      unitW:100, cal:546, p:5,  c:60,  f:31},
+  {id:'proteina',   name:'Proteina en polvo',emoji:'💪', cat:'Extras',   unit:'scoop',  unitW:35,  cal:130, p:25, c:5,   f:2},
+]
+
+const CATS = ['Todos','Proteina','Lacteos','Carbos','Grasas','Legumbres','Frutas','Verduras','Extras']
+let curCat = 'Todos'
+let openFood = null
+
+function getTodayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}` }
+function getLogs(){ try{ return JSON.parse(localStorage.getItem('cal_logs')||'{}') }catch(e){ return {} } }
+function saveLogs(l){ localStorage.setItem('cal_logs', JSON.stringify(l)) }
+function getMeta(){ return parseInt(localStorage.getItem('cal_meta')||'3200') }
+function saveMeta(m){ localStorage.setItem('cal_meta', m) }
+
+function getTodayLog(){
+  const all = getLogs()
+  return all[getTodayKey()] || []
+}
+function saveTodayLog(log){
+  const all = getLogs()
+  all[getTodayKey()] = log
+  saveLogs(all)
+}
+
+function goPage(id, idx){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
+  document.getElementById('p-'+id).classList.add('active')
+  document.querySelectorAll('.tab')[idx].classList.add('active')
+  if(id==='hoy') renderHoy()
+  if(id==='agregar') renderAgregar()
+  if(id==='historial') renderHistorial()
+}
+
+function updateMeta(){
+  const v = parseInt(document.getElementById('meta-input').value)||3200
+  saveMeta(v)
+  renderHoy()
+}
+
+function renderHoy(){
+  const log = getTodayLog()
+  const meta = getMeta()
+  document.getElementById('meta-input').value = meta
+  document.getElementById('ring-meta').textContent = meta
+
+  let totalCal=0, totalP=0, totalC=0, totalF=0
+  log.forEach(item=>{
+    totalCal += item.cal
+    totalP += item.p
+    totalC += item.c
+    totalF += item.f
+  })
+  totalCal = Math.round(totalCal)
+  totalP = Math.round(totalP)
+  totalC = Math.round(totalC)
+  totalF = Math.round(totalF)
+
+  document.getElementById('ring-kcal').textContent = totalCal
+  const restantes = Math.max(0, meta - totalCal)
+  document.getElementById('rng-restantes').textContent = restantes
+  document.getElementById('rng-restantes').style.color = restantes < 200 ? 'var(--red)' : 'var(--green)'
+  document.getElementById('rng-comidas').textContent = log.length
+  document.getElementById('rng-prot').textContent = totalP+'g'
+
+  const circ = 2 * Math.PI * 68
+  const pct = Math.min(totalCal / meta, 1)
+  const offset = circ - pct * circ
+  const ring = document.getElementById('ring-fill')
+  ring.setAttribute('stroke-dasharray', circ)
+  ring.setAttribute('stroke-dashoffset', offset)
+  ring.setAttribute('stroke', totalCal > meta ? 'var(--red)' : 'var(--gold)')
+
+  const metaP = 160, metaC = 450, metaF = 90
+  document.getElementById('mac-prot').textContent = totalP+'g'
+  document.getElementById('mac-carb').textContent = totalC+'g'
+  document.getElementById('mac-fat').textContent = totalF+'g'
+  document.getElementById('bar-prot').style.width = Math.min(100, Math.round(totalP/metaP*100))+'%'
+  document.getElementById('bar-carb').style.width = Math.min(100, Math.round(totalC/metaC*100))+'%'
+  document.getElementById('bar-fat').style.width = Math.min(100, Math.round(totalF/metaF*100))+'%'
+
+  const el = document.getElementById('log-list')
+  if(!log.length){
+    el.innerHTML = `<div class="log-empty"><div class="log-empty-icon">🍽️</div>Aun no has registrado nada hoy.<br>Ve a <strong>Agregar</strong> para empezar.</div>`
+    return
+  }
+  el.innerHTML = log.map((item,i)=>`
+    <div class="log-item">
+      <div class="log-emoji">${item.emoji}</div>
+      <div class="log-info">
+        <div class="log-name">${item.name}</div>
+        <div class="log-detail">${item.qty} ${item.unit} · P:${Math.round(item.p)}g C:${Math.round(item.c)}g G:${Math.round(item.f)}g</div>
+      </div>
+      <div class="log-kcal">${Math.round(item.cal)}</div>
+      <button class="log-del" onclick="delItem(${i})">✕</button>
+    </div>
+  `).join('')
+}
+
+function delItem(i){
+  const log = getTodayLog()
+  log.splice(i,1)
+  saveTodayLog(log)
+  renderHoy()
+}
+
+function renderAgregar(){
+  const cats = document.getElementById('cat-scroll')
+  cats.innerHTML = CATS.map(c=>`<button class="cat-btn${curCat===c?' active':''}" onclick="setCat('${c}',this)">${c}</button>`).join('')
+  renderFoods()
+}
+
+function setCat(c, btn){
+  curCat = c
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'))
+  btn.classList.add('active')
+  renderFoods()
+}
+
+function renderFoods(){
+  const q = (document.getElementById('search-input')?.value||'').toLowerCase()
+  let foods = FOODS
+  if(curCat!=='Todos') foods = foods.filter(f=>f.cat===curCat)
+  if(q) foods = foods.filter(f=>f.name.toLowerCase().includes(q))
+  document.getElementById('food-list').innerHTML = foods.map(f=>`
+    <div class="food-item" id="fi-${f.id}">
+      <div class="food-main" onclick="toggleFood('${f.id}')">
+        <div class="food-emoji">${f.emoji}</div>
+        <div class="food-info">
+          <div class="food-name">${f.name}</div>
+          <div class="food-cal">${f.cal} kcal / ${f.unitW}${f.unit==='g'?'g':' '+f.unit} · P:${f.p}g C:${f.c}g G:${f.f}g</div>
+        </div>
+        <div class="food-add-btn" onclick="event.stopPropagation();quickAdd('${f.id}')">+</div>
+      </div>
+      <div id="fq-${f.id}" style="display:none">
+        <div class="food-qty-row">
+          <label>Cantidad:</label>
+          <input class="qty-input" type="number" id="qty-${f.id}" value="1" min="0.5" step="0.5" inputmode="decimal">
+          <span class="qty-unit">${f.unit}${f.unit==='g'?'':' ('+f.unitW+'g c/u)'}</span>
+          <button class="add-confirm-btn" onclick="addFood('${f.id}')">Agregar</button>
+        </div>
+      </div>
+    </div>
+  `).join('')
+}
+
+function toggleFood(id){
+  const el = document.getElementById('fq-'+id)
+  const isOpen = el.style.display !== 'none'
+  document.querySelectorAll('[id^="fq-"]').forEach(e=>e.style.display='none')
+  if(!isOpen) el.style.display='block'
+}
+
+function quickAdd(id){
+  const food = FOODS.find(f=>f.id===id)
+  if(!food) return
+  addFoodWithQty(food, 1)
+}
+
+function addFood(id){
+  const food = FOODS.find(f=>f.id===id)
+  const qty = parseFloat(document.getElementById('qty-'+id).value)||1
+  addFoodWithQty(food, qty)
+  document.getElementById('fq-'+id).style.display='none'
+}
+
+function addFoodWithQty(food, qty){
+  const mult = qty
+  const item = {
+    name: food.name,
+    emoji: food.emoji,
+    unit: food.unit,
+    qty: qty,
+    cal: food.cal * mult,
+    p: food.p * mult,
+    c: food.c * mult,
+    f: food.f * mult,
+    time: new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})
+  }
+  const log = getTodayLog()
+  log.push(item)
+  saveTodayLog(log)
+  showToast(`${food.emoji} ${food.name} agregado`)
+}
+
+function renderHistorial(){
+  const all = getLogs()
+  const meta = getMeta()
+  const keys = Object.keys(all).sort((a,b)=>new Date(b)-new Date(a)).slice(0,14)
+  const el = document.getElementById('hist-content')
+  if(!keys.length){
+    el.innerHTML = `<div class="log-empty"><div class="log-empty-icon">📅</div>Sin historial aun</div>`
+    return
+  }
+  el.innerHTML = keys.map(key=>{
+    const log = all[key]
+    const total = Math.round(log.reduce((s,i)=>s+i.cal,0))
+    const pct = Math.min(100, Math.round(total/meta*100))
+    const color = total >= meta*0.9 ? 'var(--green)' : total >= meta*0.6 ? 'var(--gold)' : 'var(--red)'
+    const [y,m,d] = key.split('-')
+    const fecha = new Date(y,m-1,d).toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'})
+    const items = log.map(i=>i.name).slice(0,4).join(', ')+(log.length>4?'...':'')
+    return `
+      <div class="hist-day-card">
+        <div class="hist-day-top">
+          <span class="hist-day-date">${fecha}</span>
+          <span class="hist-day-kcal" style="color:${color}">${total} kcal</span>
+        </div>
+        <div class="hist-day-bar"><div class="hist-day-fill" style="width:${pct}%;background:${color}"></div></div>
+        <div class="hist-day-items">${items || 'Sin registros'}</div>
+      </div>
+    `
+  }).join('')
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.classList.add('show')
+  setTimeout(()=>t.classList.remove('show'), 2000)
+}
+
+renderHoy()
+renderAgregar()
+</script>
+</body>
+</html>
